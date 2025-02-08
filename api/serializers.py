@@ -12,9 +12,10 @@ class UserSerializer(serializers.ModelSerializer):
         return User.objects.create_user(**validated_data)
 
 class PostSerializer(serializers.ModelSerializer):
-    model = Post
-    fields = ['__all__']
+    class Meta:
+        model = Post
+        fields = ['id', 'title', 'content', 'author', 'created_at']
 
 class CommentSerializer(serializers.ModelSerializer):
     model = Comment
-    fields = ['__all__']
+    fields = '__all__'

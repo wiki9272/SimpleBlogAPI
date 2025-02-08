@@ -7,6 +7,13 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
 from django.contrib.auth.hashers import check_password
 from rest_framework.permissions import IsAuthenticated
+from django.db.models import Q
+from rest_framework.pagination import PageNumberPagination
+
+class CustomPagination(PageNumberPagination):
+    page_size = 5  # Number of posts per page
+    page_size_query_param = 'page_size'
+    max_page_size = 100
 
 #function to get token pair
 def get_tokens_for_user(user):
@@ -72,8 +79,18 @@ class ChangePassView(APIView):
         return Response({"message": "Password changed successfully"}, status=status.HTTP_200_OK)
 
 class PostView(APIView):
+    permission_classes = [IsAuthenticated]
     def get(self, request):
-        return Response({'msg':'get request working'}, status=200)
+        search_query = request.query_params.get('search', '')
+        posts = Post.objects.filter(
+            Q(title__icontains=search_query) | Q(content__icontains=search_query)
+        ).order_by('-created_at')
+
+        paginator = CustomPagination()
+        paginated_posts = paginator.paginate_queryset(posts, request)
+
+        serializer = PostSerializer(paginated_posts, many=True)
+        return paginator.get_paginated_response(serializer.data)
     
 class CommentView(APIView):
     def get(self, request):
